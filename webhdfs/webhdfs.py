@@ -154,7 +154,7 @@ class WebHDFS(object):
                     logger.debug("HTTP Response: %d, %s" % (redirect_response.status, redirect_response.reason))
                     if source_path.endswith('.gz'):  #TODO: Fixme
                         data = redirect_response.read()  # redirect_response.read().decode("zlib") <-- breaks
-                        return zlib.decompressobj(ZLIB_WBITS).decompress(data, length)  # decompresing lenght only
+                        return zlib.decompressobj(ZLIB_WBITS).decompress(data, length)  # decompressing length only
                     else:
                         return redirect_response.read()
 
