@@ -174,6 +174,16 @@ class WebHDFS(object):
 
         return files
 
+    def getfilestatus(self, path):
+        url_path = WEBHDFS_CONTEXT_ROOT + path + '?op=GETFILESTATUS'
+        logger.debug("List directory: " + url_path)
+
+        with _NameNodeHTTPClient('GET', url_path, self.namenode_host, self.namenode_port, self.username) as response:
+            logger.debug("HTTP Response: %d, %s" % (response.status, response.reason))
+            data_dict = json.loads(response.read())
+            logger.debug("Data: " + str(data_dict))
+        return data_dict.get('FileStatus')
+
 
 if __name__ == "__main__":
     webhdfs = WebHDFS("namenode.hadoop.staging.corp", 50070, "hadoop_user")
