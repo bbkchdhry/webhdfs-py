@@ -11,7 +11,9 @@ logging.basicConfig(level=logging.DEBUG, datefmt='%m/%d/%Y %I:%M:%S %p',
 logger = logging.getLogger(name='webhdfs')
 
 WEBHDFS_CONTEXT_ROOT = "/webhdfs/v1"
-ZLIB_WBITS = 16
+
+MAGIC_BITS = 16
+ZLIB_WBITS = MAGIC_BITS+zlib.MAX_WBITS
 
 
 class _NameNodeHTTPClient():
@@ -154,7 +156,7 @@ class WebHDFS(object):
                     logger.debug("HTTP Response: %d, %s" % (redirect_response.status, redirect_response.reason))
                     if source_path.endswith('.gz'):  # TODO: FixMe
                         data = redirect_response.read()  # redirect_response.read().decode("zlib") <-- breaks
-                        return zlib.decompressobj(ZLIB_WBITS).decompress(data, length)  # decompressing length only
+                        return zlib.decompressobj(ZLIB_WBITS).decompress(data, length) if data else ""
                     else:
                         return redirect_response.read()
 
