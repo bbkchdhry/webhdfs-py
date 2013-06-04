@@ -50,11 +50,6 @@ class WebHDFS(object):
         self.username = hdfs_username
 
     def parse_url(self, url):
-        """
-        Given a URL, returns a 4-tuple containing the hostname, port,
-        a path relative to root (if any), and a boolean representing
-        whether the connection should use SSL or not.
-        """
         (scheme, netloc, path, params, query, frag) = urlparse(url)
 
         # Verify hostnames are valid and parse a port spec (if any)
