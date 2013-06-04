@@ -131,7 +131,7 @@ class WebHDFS(object):
 
             return response.status
 
-    def readfile(self, source_path, offset=0, length=10000, buffersize=10000):
+    def readfile(self, source_path, length=10000, offset=0, buffersize=10000):
         url_path = WEBHDFS_CONTEXT_ROOT + source_path + '?op=OPEN&offset=%s&length=%s&buffersize=%s' % (
             offset, length, buffersize)
 
@@ -152,7 +152,7 @@ class WebHDFS(object):
                 with _NameNodeHTTPClient('GET', url_path, redirect_host, redirect_port, self.username) \
                         as redirect_response:
                     logger.debug("HTTP Response: %d, %s" % (redirect_response.status, redirect_response.reason))
-                    if source_path.endswith('.gz'):  #TODO: Fixme
+                    if source_path.endswith('.gz'):  # TODO: FixMe
                         data = redirect_response.read()  # redirect_response.read().decode("zlib") <-- breaks
                         return zlib.decompressobj(ZLIB_WBITS).decompress(data, length)  # decompressing length only
                     else:
@@ -161,7 +161,7 @@ class WebHDFS(object):
     def listdir(self, path):
         url_path = WEBHDFS_CONTEXT_ROOT + path + '?op=LISTSTATUS'
         logger.debug("List directory: " + url_path)
-
+        file_name = path.split('/')[-1:][0]
         with _NameNodeHTTPClient('GET', url_path, self.namenode_host, self.namenode_port, self.username) as response:
             logger.debug("HTTP Response: %d, %s" % (response.status, response.reason))
             data_dict = json.loads(response.read())
@@ -170,7 +170,7 @@ class WebHDFS(object):
             files = []
             for i in data_dict["FileStatuses"]["FileStatus"]:
                 logger.debug(i["type"] + ": " + i["pathSuffix"])
-                files.append((i["pathSuffix"], i["length"], i["type"]))
+                files.append((i["pathSuffix"] or file_name, i["length"], i["type"]))
 
         return files
 
