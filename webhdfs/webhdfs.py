@@ -3,7 +3,7 @@ import json
 import logging
 import zlib
 
-from httplib import HTTPConnection
+from httplib import HTTPConnection, IncompleteRead
 from urlparse import urlparse
 
 logging.basicConfig(level=logging.DEBUG, datefmt='%m/%d/%Y %I:%M:%S %p',
@@ -154,13 +154,22 @@ class WebHDFS(object):
                 with _NameNodeHTTPClient('GET', url_path, redirect_host, redirect_port, self.username) \
                         as redirect_response:
                     logger.debug("HTTP Response: %d, %s" % (redirect_response.status, redirect_response.reason))
-                    if source_path.endswith('.gz'):  # TODO: FixMe
-                        data = redirect_response.read()  # redirect_response.read().decode("zlib") <-- breaks
-                        return zlib.decompressobj(ZLIB_WBITS).decompress(data, length) if data else ""
-                    else:
-                        return redirect_response.read()
 
-    def listdir(self, path):
+                    try:
+                        data = redirect_response.read()
+                    except IncompleteRead as e:
+                        data = e.partial
+
+                    if data:
+                        if source_path.endswith('.gz'):  # TODO: FixMe - Improve
+                            # redirect_response.read().decode("zlib") <-- breaks
+                            return zlib.decompressobj(ZLIB_WBITS).decompress(data, length)
+                    else:
+                        data = ""
+
+                    return data
+
+    def listdir(self, path, wildcard=[]):  # add wildcard list to filter by dates
         url_path = WEBHDFS_CONTEXT_ROOT + path + '?op=LISTSTATUS'
         logger.debug("List directory: " + url_path)
         file_name = path.split('/')[-1:][0]
@@ -171,8 +180,13 @@ class WebHDFS(object):
 
             files = []
             for i in data_dict["FileStatuses"]["FileStatus"]:
-                logger.debug(i["type"] + ": " + i["pathSuffix"])
-                files.append((i["pathSuffix"] or file_name, i["length"], i["type"]))
+                if len(wildcard) > 0:
+                    if [w for w in wildcard if w in i["pathSuffix"]]:
+                        logger.debug(i["type"] + ": " + i["pathSuffix"])
+                        files.append((i["pathSuffix"] or file_name, i["length"], i["type"]))
+                else:
+                    logger.debug(i["type"] + ": " + i["pathSuffix"])
+                    files.append((i["pathSuffix"] or file_name, i["length"], i["type"]))
 
         return files
 
